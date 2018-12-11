@@ -1,4 +1,4 @@
-import { Lbry, doNotify, doHideNotification } from 'lbry-redux';
+import { Lbry, doToast } from 'lbry-redux';
 import Lbryio from 'lbryio';
 
 const rewards = {};
@@ -27,22 +27,17 @@ rewards.claimReward = (type, rewardParams) => {
       const message =
         reward.reward_notification || `You have claimed a ${reward.reward_amount} LBC reward.`;
 
-      // We use a modal in the desktop app for this reward code. Dismiss it before showing the snackbar
-      if (type === rewards.TYPE_REWARD_CODE) {
-        window.store.dispatch(doHideNotification());
-      }
-
       // Display global notice
-      const action = doNotify({
+      const action = doToast({
         message,
         linkText: __('Show All'),
         linkTarget: '/rewards',
-        isError: false,
-        displayType: ['snackbar'],
       });
       window.store.dispatch(action);
 
-      // Add more events here to display other places
+      if (rewards.callbacks.claimRewardSuccess) {
+        rewards.callbacks.claimRewardSuccess();
+      }
 
       resolve(reward);
     }, reject);
@@ -60,15 +55,13 @@ rewards.claimReward = (type, rewardParams) => {
         case rewards.TYPE_FIRST_CHANNEL:
           Lbry.claim_list_mine()
             .then(claims => {
-              const claim = claims
-                .reverse()
-                .find(
-                  foundClaim =>
-                    foundClaim.name.length &&
-                    foundClaim.name[0] === '@' &&
-                    foundClaim.txid.length &&
-                    foundClaim.type === 'claim'
-                );
+              const claim = claims.find(
+                foundClaim =>
+                  foundClaim.name.length &&
+                  foundClaim.name[0] === '@' &&
+                  foundClaim.txid.length &&
+                  foundClaim.type === 'claim'
+              );
               if (claim) {
                 params.transaction_id = claim.txid;
                 requestReward(resolve, reject, params);
@@ -82,15 +75,13 @@ rewards.claimReward = (type, rewardParams) => {
         case rewards.TYPE_FIRST_PUBLISH:
           Lbry.claim_list_mine()
             .then(claims => {
-              const claim = claims
-                .reverse()
-                .find(
-                  foundClaim =>
-                    foundClaim.name.length &&
-                    foundClaim.name[0] !== '@' &&
-                    foundClaim.txid.length &&
-                    foundClaim.type === 'claim'
-                );
+              const claim = claims.find(
+                foundClaim =>
+                  foundClaim.name.length &&
+                  foundClaim.name[0] !== '@' &&
+                  foundClaim.txid.length &&
+                  foundClaim.type === 'claim'
+              );
               if (claim) {
                 params.transaction_id = claim.txid;
                 requestReward(resolve, reject, params);
@@ -116,6 +107,16 @@ rewards.claimReward = (type, rewardParams) => {
       }
     });
   });
+};
+rewards.callbacks = {
+  // Set any callbacks that require code not found in this project
+  claimRewardSuccess: null,
+  claimFirstRewardSuccess: null,
+  rewardApprovalRequired: null,
+};
+
+rewards.setCallback = (name, method) => {
+  rewards.callbacks[name] = method;
 };
 
 export default rewards;
