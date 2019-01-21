@@ -104,7 +104,7 @@ return /******/ (function(modules) { // webpackBootstrap
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.selectUserInviteNewErrorMessage = exports.selectUserInviteNewIsPending = exports.selectUserInviteStatusFailed = exports.selectUserInvitees = exports.selectUserInvitesRemaining = exports.selectUserInviteStatusIsPending = exports.selectAccessToken = exports.selectUserIsVerificationCandidate = exports.selectIdentityVerifyErrorMessage = exports.selectIdentityVerifyIsPending = exports.selectPhoneVerifyIsPending = exports.selectPhoneVerifyErrorMessage = exports.selectEmailVerifyErrorMessage = exports.selectEmailVerifyIsPending = exports.selectPhoneNewIsPending = exports.selectPhoneNewErrorMessage = exports.selectEmailNewErrorMessage = exports.selectEmailNewIsPending = exports.selectUserIsRewardApproved = exports.selectPhoneToVerify = exports.selectEmailToVerify = exports.selectUserCountryCode = exports.selectUserPhone = exports.selectUserEmail = exports.selectUser = exports.selectUserIsPending = exports.selectAuthenticationIsPending = exports.selectRewardContentClaimIds = exports.selectRewardByType = exports.selectClaimRewardError = exports.selectClaimErrorsByType = exports.selectIsClaimRewardPending = exports.selectClaimsPendingByType = exports.selectUnclaimedRewardValue = exports.selectFetchingRewards = exports.selectUnclaimedRewards = exports.selectClaimedRewardsByTransactionId = exports.selectClaimedRewards = exports.selectClaimedRewardsById = exports.selectUnclaimedRewardsByType = exports.makeSelectRewardByType = exports.makeSelectRewardAmountByType = exports.makeSelectIsRewardClaimPending = exports.makeSelectClaimRewardError = exports.selectIsAuthenticating = exports.selectAuthToken = exports.userReducer = exports.rewardsReducer = exports.authReducer = exports.doUserInviteNew = exports.doUserIdentityVerify = exports.doUserResendVerificationEmail = exports.doFetchAccessToken = exports.doUserPhoneVerify = exports.doUserPhoneVerifyFailure = exports.doUserPhoneReset = exports.doUserPhoneNew = exports.doUserEmailVerify = exports.doUserEmailVerifyFailure = exports.doUserEmailToVerify = exports.doUserEmailNew = exports.doUserFetch = exports.doAuthenticate = exports.doInstallNew = exports.doFetchInviteStatus = exports.doFetchRewardedContent = exports.doClaimRewardClearError = exports.doClaimEligiblePurchaseRewards = exports.doClaimRewardType = exports.doRewardList = exports.doGenerateAuthToken = exports.rewards = exports.Lbryio = exports.LBRYINC_ACTIONS = undefined;
+exports.selectUserInviteNewErrorMessage = exports.selectUserInviteNewIsPending = exports.selectUserInviteStatusFailed = exports.selectUserInvitees = exports.selectUserInvitesRemaining = exports.selectUserInviteStatusIsPending = exports.selectAccessToken = exports.selectUserIsVerificationCandidate = exports.selectIdentityVerifyErrorMessage = exports.selectIdentityVerifyIsPending = exports.selectPhoneVerifyIsPending = exports.selectPhoneVerifyErrorMessage = exports.selectEmailVerifyErrorMessage = exports.selectEmailVerifyIsPending = exports.selectPhoneNewIsPending = exports.selectPhoneNewErrorMessage = exports.selectEmailNewErrorMessage = exports.selectEmailNewIsPending = exports.selectUserIsRewardApproved = exports.selectPhoneToVerify = exports.selectEmailToVerify = exports.selectUserCountryCode = exports.selectUserPhone = exports.selectUserEmail = exports.selectUser = exports.selectUserIsPending = exports.selectAuthenticationIsPending = exports.selectRewardContentClaimIds = exports.selectRewardByType = exports.selectClaimRewardError = exports.selectClaimErrorsByType = exports.selectIsClaimRewardPending = exports.selectClaimsPendingByType = exports.selectUnclaimedRewardValue = exports.selectFetchingRewards = exports.selectUnclaimedRewards = exports.selectClaimedRewardsByTransactionId = exports.selectClaimedRewards = exports.selectClaimedRewardsById = exports.selectUnclaimedRewardsByType = exports.makeSelectRewardByType = exports.makeSelectRewardAmountByType = exports.makeSelectIsRewardClaimPending = exports.makeSelectClaimRewardError = exports.selectIsAuthenticating = exports.selectAuthToken = exports.userReducer = exports.rewardsReducer = exports.authReducer = exports.doUserInviteNew = exports.doUserIdentityVerify = exports.doUserResendVerificationEmail = exports.doFetchAccessToken = exports.doUserPhoneVerify = exports.doUserPhoneVerifyFailure = exports.doUserPhoneReset = exports.doUserPhoneNew = exports.doUserEmailVerify = exports.doUserEmailVerifyFailure = exports.doUserEmailToVerify = exports.doUserCheckEmailVerified = exports.doUserEmailNew = exports.doUserFetch = exports.doAuthenticate = exports.doInstallNew = exports.doFetchInviteStatus = exports.doFetchRewardedContent = exports.doClaimRewardClearError = exports.doClaimEligiblePurchaseRewards = exports.doClaimRewardType = exports.doRewardList = exports.doGenerateAuthToken = exports.rewards = exports.Lbryio = exports.LBRYINC_ACTIONS = undefined;
 
 var _auth = __webpack_require__(1);
 
@@ -178,6 +178,12 @@ Object.defineProperty(exports, 'doUserEmailNew', {
   enumerable: true,
   get: function get() {
     return _user.doUserEmailNew;
+  }
+});
+Object.defineProperty(exports, 'doUserCheckEmailVerified', {
+  enumerable: true,
+  get: function get() {
+    return _user.doUserCheckEmailVerified;
   }
 });
 Object.defineProperty(exports, 'doUserEmailToVerify', {
@@ -8003,6 +8009,10 @@ function doClaimRewardType(rewardType) {
       return;
     }
 
+    // Set `claim_code` so the api knows which reward to give if there are multiple of the same type
+    var params = options.params || {};
+    params.claim_code = reward.claim_code;
+
     dispatch({
       type: _lbryRedux.ACTIONS.CLAIM_REWARD_STARTED,
       data: { reward: reward }
@@ -8030,9 +8040,13 @@ function doClaimRewardType(rewardType) {
           error: !options || !options.failSilently ? error : undefined
         }
       });
+
+      if (options.notifyError) {
+        dispatch((0, _lbryRedux.doError)(error.message));
+      }
     };
 
-    _rewards3.default.claimReward(rewardType, options.params).then(success, failure);
+    _rewards3.default.claimReward(rewardType, params).then(success, failure);
   };
 }
 
@@ -8585,6 +8599,7 @@ exports.doFetchInviteStatus = doFetchInviteStatus;
 exports.doInstallNew = doInstallNew;
 exports.doAuthenticate = doAuthenticate;
 exports.doUserFetch = doUserFetch;
+exports.doUserCheckEmailVerified = doUserCheckEmailVerified;
 exports.doUserPhoneReset = doUserPhoneReset;
 exports.doUserPhoneNew = doUserPhoneNew;
 exports.doUserPhoneVerifyFailure = doUserPhoneVerifyFailure;
@@ -8698,6 +8713,22 @@ function doUserFetch() {
         type: _lbryRedux.ACTIONS.USER_FETCH_FAILURE,
         data: { error: error }
       });
+    });
+  };
+}
+
+function doUserCheckEmailVerified() {
+  // This will happen in the background so we don't need loading booleans
+  return function (dispatch) {
+    _lbryio2.default.getCurrentUser().then(function (user) {
+      if (user.has_verified_email) {
+        dispatch((0, _rewards.doRewardList)());
+
+        dispatch({
+          type: _lbryRedux.ACTIONS.USER_FETCH_SUCCESS,
+          data: { user: user }
+        });
+      }
     });
   };
 }
@@ -9052,6 +9083,9 @@ function setClaimRewardState(state, reward, isClaiming) {
 
   var newClaimPendingByType = Object.assign({}, state.claimPendingByType);
   var newClaimErrorsByType = Object.assign({}, state.claimErrorsByType);
+
+  // Currently, for multiple rewards of the same type, they will both show "claiming" when one is beacuse we track this by `reward_type`
+  // To fix this we will need to use `claim_code` instead, and change all selectors to match
   if (isClaiming) {
     newClaimPendingByType[reward.reward_type] = isClaiming;
   } else {
@@ -9082,7 +9116,7 @@ reducers[_lbryRedux.ACTIONS.CLAIM_REWARD_SUCCESS] = function (state, action) {
 
 
   var index = unclaimedRewards.findIndex(function (ur) {
-    return ur.reward_type === reward.reward_type;
+    return ur.claim_code === reward.claim_code;
   });
   unclaimedRewards.splice(index, 1);
 

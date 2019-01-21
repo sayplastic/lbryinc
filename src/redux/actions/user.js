@@ -98,6 +98,22 @@ export function doUserFetch() {
   };
 }
 
+export function doUserCheckEmailVerified() {
+  // This will happen in the background so we don't need loading booleans
+  return dispatch => {
+    Lbryio.getCurrentUser().then(user => {
+      if (user.has_verified_email) {
+        dispatch(doRewardList());
+
+        dispatch({
+          type: ACTIONS.USER_FETCH_SUCCESS,
+          data: { user },
+        });
+      }
+    });
+  };
+}
+
 export function doUserPhoneReset() {
   return {
     type: ACTIONS.USER_PHONE_RESET,
